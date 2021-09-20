@@ -1,0 +1,31 @@
+<% if(Object.keys(NetworkSettings.Ports).length > 1){ -%>
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: "true"
+  labels:
+    chart: <%=Name.replace("/","")%>
+  name: <%=Name.replace("/","")-%>
+<% if(Name.indexOf("api")>-1){ %> 
+  namespace: backend
+<% } else if (Name.indexOf("web")>-1){%>
+  namespace: frontend
+<%} else {%>
+  namespace: default
+<%}%>
+spec:
+  rules:
+<% Object.keys(NetworkSettings.Ports).forEach(function(k){ -%>
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/<%=k.replace("/tcp","")%>/<%=(Name.indexOf("web")>-1)?"web":"api"%>/<%=Name.replace("/","").replace("sgyt-","").replace("gyt-","").replace("api-","").replace("-api","").replace("web-","").replace("-web","")%>/
+        pathType: Prefix
+        backend:
+          serviceName: <%=Name.replace("/","")%> 
+          servicePort: <%=k.replace("/tcp","") %>
+<% })-%>
+<% }-%>

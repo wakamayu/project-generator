@@ -1,0 +1,9 @@
+{
+    "structureFolder":["<%=Name%>/.argocd"],
+    "structureFile":{
+        "deployment.ejs": "<%=Name%>/.argocd/deployment.yml",
+        "ingress.ejs":"<%=Name%>/.argocd/ingress.yml",
+        "kustomization.ejs":"<%=Name%>/.argocd/kustomization.yml",
+        "service.ejs":"<%=Name%>/.argocd/service.yml"
+    }
+}

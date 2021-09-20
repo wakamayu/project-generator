@@ -1,0 +1,24 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: <%=Name.replace("/","")%>
+  name: <%=Name.replace("/","")-%>
+<% if(Name.indexOf("api")>-1){ %> 
+  namespace: backend
+<% } else if (Name.indexOf("web")>-1){%>
+  namespace: frontend
+<%} else {%>
+  namespace: default
+<%}%>
+spec:
+  ports:
+<% Object.keys(NetworkSettings.Ports).forEach(function(k){ -%>
+  - port: <%=k.replace("/tcp","") %>
+    protocol: TCP
+    targetPort: <%=k.replace("/tcp","") %>
+<% })-%>
+  selector:
+    app: <%=Name.replace("/","")%>

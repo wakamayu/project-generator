@@ -1,0 +1,70 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: <%=Name.replace("/","") %>
+  name: <%=Name.replace("/","")%>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <%=Name.replace("/","") %> 
+  template:
+    metadata:
+      labels:
+        run: <%=Name.replace("/","") %>
+<% if(Name.indexOf("api")>-1){ -%> 
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "testing"
+        vault.hashicorp.com/agent-inject-secret-config: "testing/<%=Name.replace("/","")-%>"
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{- with secret "secret<%=Name-%>" -}}
+            {{ range $k, $v := .Data.data }}
+              export {{ $k }}="{{ $v }}"
+            {{ end }}
+          {{- end -}}
+<%}-%>
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name:
+<% if(Config.Cmd != null && Object.keys(Config.Cmd).length > -1){ -%>
+          command: ["<%=Config.Entrypoint.join('&&')%>"]
+          args: ['-c', 'source /vault/secrets/config && <%= Config.Cmd.join(' ')%>']
+<%}else{ -%>
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && <%=Config.Entrypoint.join('&&')%>']
+<%} -%>
+<%  if(Object.keys(Mounts).length > -1 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
+          volumeMounts:
+<% Object.keys(Mounts).forEach(function(k){
+    if('bind' == Mounts[k].Type ){ console.log(Mounts[k]) -%>
+          - mountPath: <%=Mounts[k].Destination%>
+            name: <%=new Buffer(Mounts[k].Source).toString('base64')%>
+<%}})}-%>
+          ports:
+<% Object.keys(NetworkSettings.Ports).forEach(function(k){ -%>
+          - containerPort: <%=k.replace("/tcp","") %>
+<% })-%>
+          resources:
+            limits:
+                memory: "<%=(parseInt(HostConfig.Memory)>0)?((parseInt(HostConfig.Memory)/1024)/1024):128%>Mi"
+            requests:
+                memory: "512Mi"
+<%  if(Object.keys(Mounts).length > -1 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
+        volumes:
+<% Object.keys(Mounts).forEach(function(k){ 
+  if('bind' == Mounts[k].Type ){ -%>
+        - name: <%=new Buffer(Mounts[k].Source).toString('base64')%>
+          hostPath:
+            path: <%=Mounts[k].Source%>
+<% if(/^[a-zA-Z]:\\(\w+\\)*\w*$/.test(Mounts[k].Source)){-%>
+            type: FileOrCreate
+<%}else{-%>
+            type: DirectoryOrCreate
+<%}}})}-%>

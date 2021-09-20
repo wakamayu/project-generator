@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- deployment.yml
+<% if(Object.keys(NetworkSettings.Ports).length > 1){ -%>
+- ingress.yml
+<% }-%>
+- service.yml
+<% if(Name.indexOf("api")>-1){-%> 
+namespace: backend
+<% } else if (Name.indexOf("web")>-1){-%>
+namespace: frontend
+<%} else {-%>
+namespace: default
+<%}-%>
+commonLabels:
+  app: <%=Name.replace("/","")%> 
