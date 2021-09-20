@@ -32,15 +32,18 @@ spec:
         - name: regcred
         containers:
         - image: app_image
-          name:
-<% if(Config.Cmd != null && Object.keys(Config.Cmd).length > -1){ -%>
+          name: <%=Name.replace("/","")%>
+<% if(Config.Entrypoint != null && Object.keys(Config.Entrypoint).length > 0){ -%>
           command: ["<%=Config.Entrypoint.join('&&')%>"]
+<%}else{-%>
+          command: ["/bin/sh"]
+<%}-%>
+<% if(Config.Cmd != null && Object.keys(Config.Cmd).length > 0){ -%>
           args: ['-c', 'source /vault/secrets/config && <%= Config.Cmd.join(' ')%>']
 <%}else{ -%>
-          command: ["/bin/sh"]
           args: ['-c', 'source /vault/secrets/config && <%=Config.Entrypoint.join('&&')%>']
 <%} -%>
-<%  if(Object.keys(Mounts).length > -1 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
+<%  if(Object.keys(Mounts).length > 0 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
           volumeMounts:
 <% Object.keys(Mounts).forEach(function(k){
     if('bind' == Mounts[k].Type ){ console.log(Mounts[k]) -%>
@@ -56,7 +59,7 @@ spec:
                 memory: "<%=(parseInt(HostConfig.Memory)>0)?((parseInt(HostConfig.Memory)/1024)/1024):128%>Mi"
             requests:
                 memory: "512Mi"
-<%  if(Object.keys(Mounts).length > -1 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
+<%  if(Object.keys(Mounts).length > 0 && Object.keys(Mounts).filter( x=> Mounts[x].Type == 'bind').length > 0){ -%>
         volumes:
 <% Object.keys(Mounts).forEach(function(k){ 
   if('bind' == Mounts[k].Type ){ -%>
