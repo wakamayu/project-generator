@@ -1,0 +1,14 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: odoo_web_1_d1d17f60808c
+  name: odoo_web_1_d1d17f60808c
+  namespace: frontend
+
+spec:
+  ports:
+  selector:
+    app: odoo_web_1_d1d17f60808c

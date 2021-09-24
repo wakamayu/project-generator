@@ -1,0 +1,39 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: loki_promtail_1_9bc7e84c63a2
+  name: loki_promtail_1_9bc7e84c63a2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki_promtail_1_9bc7e84c63a2 
+  template:
+    metadata:
+      labels:
+        run: loki_promtail_1_9bc7e84c63a2
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: loki_promtail_1_9bc7e84c63a2
+          command: ["/usr/bin/promtail"]
+          args: ['-c', 'source /vault/secrets/config && -config.file=/etc/promtail/config.yml']
+          volumeMounts:
+          - mountPath: /var/log
+            name: L3Zhci9sb2c=
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"
+        volumes:
+        - name: L3Zhci9sb2c=
+          hostPath:
+            path: /var/log
+            type: DirectoryOrCreate

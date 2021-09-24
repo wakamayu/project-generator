@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nostalgic_johnson
+  name: nostalgic_johnson
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nostalgic_johnson 
+  template:
+    metadata:
+      labels:
+        run: nostalgic_johnson
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: nostalgic_johnson
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install . &amp;&amp; npm link &amp;&amp; npm publish']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

@@ -1,0 +1,22 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: "true"
+  labels:
+    chart: sgyt-api-quote
+  name: sgyt-api-quote 
+  namespace: backend
+
+spec:
+  rules:
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/80/api/quote/
+        pathType: Prefix
+        backend:
+          serviceName: sgyt-api-quote 
+          servicePort: 80

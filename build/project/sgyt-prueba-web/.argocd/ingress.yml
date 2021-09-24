@@ -1,0 +1,30 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: "true"
+  labels:
+    chart: sgyt-prueba-web
+  name: sgyt-prueba-web
+  namespace: frontend
+
+spec:
+  rules:
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/80/web/prueba/
+        pathType: Prefix
+        backend:
+          serviceName: sgyt-prueba-web 
+          servicePort: 80
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/8080/web/prueba/
+        pathType: Prefix
+        backend:
+          serviceName: sgyt-prueba-web 
+          servicePort: 8080

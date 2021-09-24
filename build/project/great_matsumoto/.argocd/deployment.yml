@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: great_matsumoto
+  name: great_matsumoto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: great_matsumoto 
+  template:
+    metadata:
+      labels:
+        run: great_matsumoto
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: great_matsumoto
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install . &amp;&amp; npm link']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

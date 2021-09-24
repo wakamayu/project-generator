@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: loki_grafana_1_f8bde8b65a4e
+  name: loki_grafana_1_f8bde8b65a4e
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki_grafana_1_f8bde8b65a4e 
+  template:
+    metadata:
+      labels:
+        run: loki_grafana_1_f8bde8b65a4e
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: loki_grafana_1_f8bde8b65a4e
+          command: ["/run.sh"]
+          args: ['-c', 'source /vault/secrets/config && /run.sh']
+          ports:
+          - containerPort: 3000
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

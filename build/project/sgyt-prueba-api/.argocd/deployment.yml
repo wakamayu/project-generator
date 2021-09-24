@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sgyt-prueba-api
+  name: sgyt-prueba-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sgyt-prueba-api 
+  template:
+    metadata:
+      labels:
+        run: sgyt-prueba-api
+ 
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "testing"
+        vault.hashicorp.com/agent-inject-secret-config: "testing/sgyt-prueba-api"
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{- with secret "secret/sgyt-prueba-api" -}}
+            {{ range $k, $v := .Data.data }}
+              export {{ $k }}="{{ $v }}"
+            {{ end }}
+          {{- end -}}
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: sgyt-prueba-api
+          command: ["/docker-entrypoint.sh"]
+          args: ['-c', 'source /vault/secrets/config && nginx -g daemon off;']
+          ports:
+          - containerPort: 80
+          - containerPort: 8080
+          resources:
+            limits:
+                memory: "512Mi"
+            requests:
+                memory: "512Mi"

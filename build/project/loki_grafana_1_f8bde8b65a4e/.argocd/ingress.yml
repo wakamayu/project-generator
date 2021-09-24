@@ -1,0 +1,22 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: "true"
+  labels:
+    chart: loki_grafana_1_f8bde8b65a4e
+  name: loki_grafana_1_f8bde8b65a4e
+  namespace: default
+
+spec:
+  rules:
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/3000/api/loki_grafana_1_f8bde8b65a4e/
+        pathType: Prefix
+        backend:
+          serviceName: loki_grafana_1_f8bde8b65a4e 
+          servicePort: 3000

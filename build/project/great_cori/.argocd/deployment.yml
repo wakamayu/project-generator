@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: great_cori
+  name: great_cori
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: great_cori 
+  template:
+    metadata:
+      labels:
+        run: great_cori
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: great_cori
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install -g . &amp;&amp; npm link']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

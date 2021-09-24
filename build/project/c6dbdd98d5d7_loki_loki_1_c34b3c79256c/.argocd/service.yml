@@ -1,0 +1,17 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+  name: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+  namespace: default
+
+spec:
+  ports:
+  - port: 3100
+    protocol: TCP
+    targetPort: 3100
+  selector:
+    app: c6dbdd98d5d7_loki_loki_1_c34b3c79256c

@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vault_injection_k8s_poc_vault_1_84afe14a82ec
+  name: vault_injection_k8s_poc_vault_1_84afe14a82ec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault_injection_k8s_poc_vault_1_84afe14a82ec 
+  template:
+    metadata:
+      labels:
+        run: vault_injection_k8s_poc_vault_1_84afe14a82ec
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: vault_injection_k8s_poc_vault_1_84afe14a82ec
+          command: ["docker-entrypoint.sh"]
+          args: ['-c', 'source /vault/secrets/config && server -dev']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

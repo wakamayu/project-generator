@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+  name: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: c6dbdd98d5d7_loki_loki_1_c34b3c79256c 
+  template:
+    metadata:
+      labels:
+        run: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+          command: ["/usr/bin/loki"]
+          args: ['-c', 'source /vault/secrets/config && -config.file=/etc/loki/local-config.yaml']
+          ports:
+          - containerPort: 3100
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

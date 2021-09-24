@@ -1,0 +1,14 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: great_matsumoto
+  name: great_matsumoto
+  namespace: default
+
+spec:
+  ports:
+  selector:
+    app: great_matsumoto

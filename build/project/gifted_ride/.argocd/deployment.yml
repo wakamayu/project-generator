@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gifted_ride
+  name: gifted_ride
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gifted_ride 
+  template:
+    metadata:
+      labels:
+        run: gifted_ride
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: gifted_ride
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install -g . &amp;&amp; npm link']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

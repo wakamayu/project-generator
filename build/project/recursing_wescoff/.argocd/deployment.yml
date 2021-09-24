@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: recursing_wescoff
+  name: recursing_wescoff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recursing_wescoff 
+  template:
+    metadata:
+      labels:
+        run: recursing_wescoff
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: recursing_wescoff
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install &amp;&amp; npm link &amp;&amp; npm publish']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

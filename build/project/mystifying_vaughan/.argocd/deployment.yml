@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mystifying_vaughan
+  name: mystifying_vaughan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mystifying_vaughan 
+  template:
+    metadata:
+      labels:
+        run: mystifying_vaughan
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: mystifying_vaughan
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install -g . &amp;&amp; npm link']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

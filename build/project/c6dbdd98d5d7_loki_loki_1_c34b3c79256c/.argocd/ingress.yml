@@ -1,0 +1,22 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/strip-path: "true"
+  labels:
+    chart: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+  name: c6dbdd98d5d7_loki_loki_1_c34b3c79256c
+  namespace: default
+
+spec:
+  rules:
+  - host: srv-paulet.sgyt.local
+    http:
+      paths:
+      - path: /ingress/3100/api/c6dbdd98d5d7_loki_loki_1_c34b3c79256c/
+        pathType: Prefix
+        backend:
+          serviceName: c6dbdd98d5d7_loki_loki_1_c34b3c79256c 
+          servicePort: 3100

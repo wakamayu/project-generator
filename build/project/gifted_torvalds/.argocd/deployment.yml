@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gifted_torvalds
+  name: gifted_torvalds
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gifted_torvalds 
+  template:
+    metadata:
+      labels:
+        run: gifted_torvalds
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: gifted_torvalds
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install &amp;&amp; npm link &amp;&amp; npm publish']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

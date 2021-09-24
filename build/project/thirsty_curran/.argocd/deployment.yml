@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: thirsty_curran
+  name: thirsty_curran
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thirsty_curran 
+  template:
+    metadata:
+      labels:
+        run: thirsty_curran
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: thirsty_curran
+          command: ["/bin/sh"]
+          args: ['-c', 'source /vault/secrets/config && /bin/sh -c npm install . &amp;&amp; npm link &amp;&amp; npm publish']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

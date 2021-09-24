@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sgyt-prueba-web
+  name: sgyt-prueba-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sgyt-prueba-web 
+  template:
+    metadata:
+      labels:
+        run: sgyt-prueba-web
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: sgyt-prueba-web
+          command: ["/docker-entrypoint.sh"]
+          args: ['-c', 'source /vault/secrets/config && nginx -g daemon off;']
+          ports:
+          - containerPort: 80
+          - containerPort: 8080
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

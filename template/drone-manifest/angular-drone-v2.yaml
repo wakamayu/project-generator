@@ -1,0 +1,312 @@
+---
+kind: pipeline
+name: testing-validate
+
+steps:
+  - name: testing-validate-execute-unit-test
+    image: srv-kukulka.sgyt.local/build/node:lts-alpine
+    pull: if-not-exists
+    commands:
+    - npm install -g @angular/cli && npm install 
+    - ng build --configuration=certification --outputHashing=none
+
+
+  - name: testing-validate-static
+    image: srv-kukulka.sgyt.local/build/sonar-scanner-cli:4.4
+    environment:
+      SONAR_TOKEN:
+        from_secret: PRIVATE_SONARQUBE_TOKEN
+    commands:
+     - >
+      sonar-scanner
+      -Dsonar.host.url=http://34.69.212.191/sonarqube
+      -Dsonar.login=$$SONAR_TOKEN
+      -Dsonar.projectKey=${DRONE_REPO_NAME/\//-}
+      -Dsonar.projectName=${DRONE_REPO_NAME/\//-}
+      -Dsonar.sources=.
+      -Dsonar.sourceEncoding=UTF-8
+      -Dsonar.language=js
+      -Dsonar.projectVersion=${DRONE_PULL_REQUEST}
+      -Dsonar.issuesReport.html.enable=true
+
+  - name: testing-validate-comment
+    image: srv-kukulka.sgyt.local/build/sync-cli
+    environment:
+      TOKEN_GITLAB:
+        from_secret: PRIVATE_TOKEN_GIT
+    commands:
+      - merge_requests-comment -s Validate -d digital.gyt.com.gt/gitlab -t $$TOKEN_GITLAB -r ${DRONE_REPO_NAME/\\//-} --mr ${DRONE_PULL_REQUEST}
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - develop
+    exclude:
+      - master
+      - release/*
+      - hotfix/*
+      - feature/*
+
+---
+kind: pipeline
+type: docker
+name: testing-compile
+
+steps:
+  - name: testing-compile-clone-gitops 
+    image: srv-kukulka.sgyt.local/build/git
+    commands:
+      - git clone -b develop https://digital.gyt.com.gt/gitlab/configuration/${DRONE_REPO_NAME/\//-}.git .gitops
+
+  - name: testing-compile-docker-build
+    image: srv-kukulka.sgyt.local/build/docker
+    privileged: true
+    settings:
+      debug: true
+      dockerfile: .gitops/.drone/Dockerfile
+      repo: 'srv-kukulka.sgyt.local/testing/${DRONE_REPO_NAME/\//-}'
+      registry: srv-kukulka.sgyt.local
+      username:
+        from_secret: REGISTRY_USERNAME
+      password:
+        from_secret: REGISTRY_PASSWORD
+      insecure: true
+      build_args:
+        - COMPILE_PROFILE=certification
+        - BASE_URL=/area51/private/web/portal-apps/
+      tags:
+        - "${DRONE_PULL_REQUEST}-${DRONE_BUILD_NUMBER}"
+    extra_hosts:
+      - "srv-kukulka.sgyt.local:172.20.1.78"
+
+  - name: testing-compile-comment
+    image: srv-kukulka.sgyt.local/build/sync-cli
+    environment:
+      TOKEN_GITLAB:
+        from_secret: PRIVATE_TOKEN_GIT
+    commands:
+      - merge_requests-comment -s compile -d digital.gyt.com.gt/gitlab -t $$TOKEN_GITLAB -r ${DRONE_REPO_NAME/\\//-} --mr ${DRONE_PULL_REQUEST}
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - develop
+    exclude:
+      - master
+      - release/*
+      - hotfix/*
+      - feature/*
+
+depends_on:
+- testing-validate
+
+---
+kind: pipeline
+name: testing-publish
+
+clone:
+  disable: true
+
+steps:
+  - name: testing-publish-compile-clone-gitops 
+    image: srv-kukulka.sgyt.local/build/git
+    commands:
+      - git clone -b develop https://digital.gyt.com.gt/gitlab/configuration/${DRONE_REPO_NAME/\//-}.git .gitops
+
+  - name: testing-publish-deploy
+    image: srv-kukulka.sgyt.local/build/argocd:v2.0.2
+    environment:
+      USERNAME_ARGOCD:
+        from_secret: PRIVATE_USERNAME_ARGOCD
+      PASSWORD_ARGOCD:
+        from_secret: PRIVATE_PASSWORD_ARGOCD
+    commands:
+     - >
+        argocd login develop.gyt.com.gt
+        --grpc-web-root-path digital/argo-cd 
+        --insecure 
+        --grpc-web 
+        --username $$USERNAME_ARGOCD 
+        --password $$PASSWORD_ARGOCD
+     - >
+        argocd app set ${DRONE_REPO_NAME/\//-} 
+        --kustomize-image app_image=srv-kukulka.sgyt.local/testing/${DRONE_REPO_NAME/\//-}:${DRONE_PULL_REQUEST}-${DRONE_BUILD_NUMBER}
+     - >
+        argocd app sync ${DRONE_REPO_NAME/\//-} --prune
+
+  - name: testing-publish-deploy
+    image: srv-kukulka.sgyt.local/build/ansible:latest
+    privileged: true
+    environment:
+      PLUGIN_PRIVATE_KEY: "$(cat ~/.ssh/id_rsa)"
+      ANSIBLE_HOST_KEY_CHECKING: False
+      CONTAINER_IMAGE: "srv-kukulka.sgyt.local/testing/${DRONE_REPO_NAME/\\//-}"
+      CONTAINER_TAG: "${DRONE_PULL_REQUEST}"
+      CONTAINER_NAME: "${DRONE_REPO_NAME/\\//-}"
+      VAULT_TOKEN:
+         from_secret: VAULT_TOKEN
+      VAULT_ADDRESS:
+         from_secret: VAULT_ADDRESS
+      ANSIBLE_STRATEGY: debug
+      ANSIBLE_STDOUT_CALLBACK: debug
+    settings:
+      playbook: .gitops/.drone/playbook.yml
+      inventory: /ansible/inventory/hosts
+    volumes:
+      - name: inventory
+        path: /ansible/inventory
+
+  - name: publish-compile-comment
+    image: srv-kukulka.sgyt.local/build/sync-cli
+    environment:
+      TOKEN_GITLAB:
+        from_secret: PRIVATE_TOKEN_GIT
+    commands:
+      - merge_requests-comment -s publish -d digital.gyt.com.gt/gitlab -t $$TOKEN_GITLAB -r ${DRONE_REPO_NAME/\\//-} --mr ${DRONE_PULL_REQUEST}
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - develop
+    exclude:
+      - master
+      - release/*
+      - hotfix/*
+      - feature/*
+
+volumes:
+- name: inventory
+  host:
+    path: /opt/drone/inventory
+
+depends_on:
+- testing-compile
+
+---
+kind: pipeline
+name: testing-accepted
+
+clone:
+  disable: true
+
+steps:
+  - name: testing-accepted-merge-requests
+    image: srv-kukulka.sgyt.local/build/sync-cli
+    environment:
+      TOKEN_GITLAB:
+        from_secret: PRIVATE_TOKEN_GIT
+    commands:
+      - merge_requests-accepted -d digital.gyt.com.gt/gitlab -t $$TOKEN_GITLAB -r ${DRONE_REPO_NAME/\\//-} --mr ${DRONE_PULL_REQUEST}
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - develop
+    exclude:
+      - master
+      - release/*
+      - hotfix/*
+      - feature/*
+
+depends_on:
+- testing-publish
+
+---
+# FASE 2
+kind: pipeline
+name: production-validate
+
+steps:
+
+  - name: production-validate-execute-unit-test
+    image: srv-kukulka.sgyt.local/build/node:lts-alpine
+    pull: if-not-exists
+    commands:
+    - npm install -g @angular/cli && npm install 
+    - ng build --configuration=production --outputHashing=none
+
+
+  - name: production-validate-static
+    image: srv-kukulka.sgyt.local/build/sonar-scanner-cli:4.4
+    environment:
+      SONAR_TOKEN:
+        from_secret: PRIVATE_SONARQUBE_TOKEN
+    commands:
+     - >
+      sonar-scanner
+      -Dsonar.host.url=http://34.69.212.191/sonarqube
+      -Dsonar.login=$$SONAR_TOKEN
+      -Dsonar.projectKey=${DRONE_REPO_NAME/\//-}
+      -Dsonar.projectName=${DRONE_REPO_NAME/\//-}
+      -Dsonar.sources=.
+      -Dsonar.sourceEncoding=UTF-8
+      -Dsonar.language=js
+      -Dsonar.projectVersion=${DRONE_PULL_REQUEST}
+      -Dsonar.issuesReport.html.enable=true
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - master
+    exclude:
+      - develop
+      - hotfix/*
+      - feature/*
+      - release/*
+
+---
+kind: pipeline
+type: docker
+name: production-compile
+
+steps:
+  - name: production-compile-clone-gitops 
+    image: srv-kukulka.sgyt.local/build/git
+    commands:
+      - git clone -b master https://digital.gyt.com.gt/gitlab/configuration/${DRONE_REPO_NAME/\//-}.git .gitops
+      
+  - name: production-compile-docker-build
+    image: srv-kukulka.sgyt.local/build/docker
+    privileged: true
+    settings:
+      debug: true
+      dockerfile: .gitops/.drone/Dockerfile
+      repo: 'srv-kukulka.sgyt.local/production/${DRONE_REPO_NAME/\//-}'
+      registry: srv-kukulka.sgyt.local
+      username:
+        from_secret: REGISTRY_USERNAME
+      password:
+        from_secret: REGISTRY_PASSWORD
+      insecure: true
+      build_args:
+        - BASE_URL=/area51/private/web/portal-apps/
+        - PROFILE=production
+      tags:
+        - "${DRONE_PULL_REQUEST}-${DRONE_BUILD_NUMBER}"
+    extra_hosts:
+      - "srv-kukulka.sgyt.local:172.20.1.78"
+
+trigger:
+  event:
+    - pull_request
+  branch:
+    include:
+      - master
+    exclude:
+      - develop
+      - hotfix/*
+      - feature/*
+      - release/*
+
+depends_on:
+  - production-validate

@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: odoo_web_1_d1d17f60808c
+  name: odoo_web_1_d1d17f60808c
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odoo_web_1_d1d17f60808c 
+  template:
+    metadata:
+      labels:
+        run: odoo_web_1_d1d17f60808c
+    spec:
+        serviceAccountName: testing
+        imagePullSecrets:
+        - name: regcred
+        containers:
+        - image: app_image
+          name: odoo_web_1_d1d17f60808c
+          command: ["/entrypoint.sh"]
+          args: ['-c', 'source /vault/secrets/config && odoo']
+          ports:
+          resources:
+            limits:
+                memory: "128Mi"
+            requests:
+                memory: "512Mi"

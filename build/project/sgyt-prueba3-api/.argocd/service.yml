@@ -1,0 +1,14 @@
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sgyt-prueba3-api
+  name: sgyt-prueba3-api 
+  namespace: backend
+
+spec:
+  ports:
+  selector:
+    app: sgyt-prueba3-api
